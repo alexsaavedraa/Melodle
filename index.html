@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+ <title>Melodle</title>
+ <p style="background-image: url('C:\Users\alex-\Desktop\background.png');line-height: 1px; margin-top: -.1em;margin-bottom: -.01em;""> 
+ 
+	  
+	  
+<body>
+<h1 style="color:black;font-size:10px;text-align: center;font-family: Lucida Handwriting; line-height: 0px ">Melodle</h1>      
+<div id="container" class="svg-container">
+
+</div>
+
+
+<style>
+
+body {
+ background-image: url("fbackground.png");
+ overflow: hidden;
+ 
+}
+
+.svg-container {
+    display: block;
+    position: relative;
+    width: 38vh;
+	
+
+   margin: auto;
+	
+    padding-bottom: 100%;
+    vertical-align: top;
+	margin-top: -.5em;
+ 
+}
+.svg-content {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+	
+}
+
+
+
+
+</style>
+ 
+  </svg>
+</body>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+
+<script>
+
+
+//<svg viewBox="0 0 320 1000">
+  var song2 = [[0,0,12,7,6],[150,150,300,450,300], [5,3,0,3,5], [300, 300, 150, 150, 150]]
+  var song = [[7,6,7,6,7],[300,300,300,300,300],[2,5,3,0], [300,300,300,300]];
+  var notemap = ['e','f','f#','g','g#','a','a#','b','c','c#','d','d#','e'];
+  var cumOffsets = [0,0,1,1,2,2,3,3,3,4,4,5,5]
+  var guessnum = 0;
+  var maxAttempts = 5;
+  var guess =  [];
+  var guessSong = [[], [300,300,300,300,300]]
+  var guessboxes = [];
+  var margin = { top: 20, right: 20, bottom: 20, left: 30 };
+  var width = 400 - margin.left - margin.right;
+  var height = 400 - margin.top - margin.bottom;
+  ctx = new (window.AudioContext || window.webkitAudioContext)()
+  var boxes_width = 320/7 * 5
+
+   var calcrat = "0 0 " +321 + " " + 800 + ""
+   //console.log(calcrat)
+   
+
+  var svg = d3.select("div#container").append("svg")
+    //.style("width", '320px')
+    //.style("height", '1000px')
+	.attr("preserveAspectRatio", "xMinYMin meet")
+	
+	.attr("viewBox", calcrat)
+	
+    // uncomment the line below to see the canvas size
+    //.style("outline", '3px solid green')
+	
+    
+
+  
+  var keys = [0,1,2,3,4,5,6,7,8,9,10,11,12];
+  var blackkeys = [2,4,6,9,11]; 
+	
+	var offsets = 0;
+	
+for (const i of keys) {
+var ids =  i.toString() +  "key"; 
+if (blackkeys.includes(i)){
+//console.log(ids + " black key" );
+svg.append('rect')
+.attr('id', ids)
+  .attr('x', 40 * ((i-offsets)-1) + 20)
+  .attr('y', 165)
+  .attr('width', 40)
+  .attr('height', 100)
+  .attr('stroke', 'black')
+  .attr('fill', 'black')
+  .on("mouseover", handleMouseOver)
+  .on("mouseout", handleMouseOut)
+    .on("click", handleClick);;
+  offsets+=1;
+} else {
+//console.log(i, offsets);
+	svg.append('rect')
+	.attr('id', ids)
+  .attr('x', 40 * (i-offsets))
+  .attr('y', 165)
+  .attr('width', 40)
+  .attr('height', 200)
+  .attr('stroke', 'black')
+  .attr('fill', 'white')
+   .on("mouseover", handleMouseOver)
+  .on("mouseout", handleMouseOut)
+  .on("click", handleClick);
+  
+  }
+}
+
+function buildguess(p){
+// build lines of music
+var j = 0
+	while (j < 5) {
+	var ids =  j.toString() +  "line" + p.toString(); 
+	svg.append('rect')
+		.attr('class', "mscript" + p.toString())
+		.attr('id', ids)
+	  .attr('x', 0)
+	  .attr('y', (200 * 0 ) + 50 + 10 * j)
+	  .attr('width', 320)
+	  .attr('height', 2)
+	  .attr('stroke', 'white')
+	  .attr('fill', 'black');
+
+
+	var ids =  j.toString() +  "box" ; 
+	svg.append('rect')
+		.attr('id', ids + p.toString())
+	   .attr('class', 'mscript' + + p.toString() + " mbox" + j.toString() + p.toString() )
+	  .attr('x', (320/8) * j)
+	  .attr('y',  (200 * 0 ) +  35 )
+	  .attr('width', (320/8) - 5)
+	  .attr('height', (320/5) + 15)
+	  .attr('stroke', 'black')
+	  .attr('fill', 'grey')
+	  .attr('opacity', .1);
+	  
+	  guessboxes[guessboxes.length] = ids
+	j++;  
+}
+
+	var ids =  j.toString() + "box" + p.toString(); 
+	svg.append('rect')
+		.attr('id', ids + p.toString())
+	   .attr('class', 'mscript' + + p.toString() + " mbox" + j.toString() + p.toString() )
+	  .attr('x', (320/8) * 5)
+	  .attr('y',  (200 * 0 ) +  35 )
+	  .attr('width', (320/8 * 3) - 5)
+	  .attr('height', (320/5) + 15)
+	  .attr('stroke', 'blue')
+	  .attr('fill', 'blue')
+	  .attr('opacity', .1);
+	  
+	  guessboxes[guessboxes.length] = ids
+	  
+	  
+	  
+	  j = 0;
+	  
+	  while (j < song[2].length)	  {
+			var noteid = "noteend" + j + p
+	  
+			console.log(song[2][j])
+			//console.log(noteid)
+			svg.append('ellipse')
+			
+			.attr('cx',  200 + ((120/song[2].length) * j )+ 5)
+			.attr('cy', (96 - (song[2][j]  + 5 * cumOffsets[song[2][j]])))
+			.attr('rx', 5)
+			.attr('ry', 4)
+			.attr('opacity', 1)
+			//.attr('id', noteid)
+			.attr('class', "mscript" + p.toString())
+			j++;
+			}
+
+}
+
+
+
+svg.append('rect')
+	.attr('id', 'check')
+  .attr('x', 120)
+  .attr('y', 380)
+  .attr('width', 80)
+  .attr('height', 20)
+  .attr('stroke', 'black')
+  .attr('fill', 'green')
+  .attr('opacity', .4)
+  .on("mouseover", () => {d3.select("#check").attr('fill', 'blue')})
+  .on("mouseout", () => {d3.select("#check").attr('fill', 'green')})
+  .on("click", checkanswer);;
+  
+  
+
+svg.append('rect')
+	.attr('id', 'del')
+  .attr('x', 0)
+  .attr('y', 380)
+  .attr('width', 80)
+  .attr('height', 20)
+  .attr('stroke', 'black')
+  .attr('fill', 'red')
+  .attr('opacity', .4)
+  .on("mouseover", () => {d3.select("#del").attr('fill', 'blue')})
+  .on("mouseout", () => {d3.select("#del").attr('fill', 'red')})
+  .on("click", erase);;
+
+
+svg.append('rect')
+	.attr('id', 'playGuess')
+  .attr('x', 240)
+  .attr('y', 380)
+  .attr('width', 80)
+  .attr('height', 20)
+  .attr('stroke', 'black')
+  .attr('fill', 'purple')
+  .attr('opacity', .4)
+  .on("mouseover", () => {d3.select("#playGuess").attr('fill', 'blue')})
+  .on("mouseout", () => {d3.select("#playGuess").attr('fill', 'purple')})
+  .on("click",  () => {
+	if (guess.length == 0){
+	playseq([song[2],song[3]])
+	} else {
+	playseq([guess,guessSong[1]]);
+	endplayed = false;
+	}
+	});;
+
+
+
+
+svg.append('text')
+			.attr('x', 20)
+			.attr('y', 795)
+			.text("←")
+			.attr('font-size', 20)
+			.attr("font-family", "Lucida Handwriting")
+			.on("click", erase)
+
+
+svg.append('text')
+			.attr('x', 130)
+			.attr('y', 795)
+			.text("Guess!")
+
+			.attr("font-family", "Lucida Handwriting")
+			.on("click", checkanswer)
+			
+			
+			
+
+svg.append('text')
+			.attr('x', 245)
+			.attr('y', 795)
+			.text("Listen")
+			.attr("font-family", "Lucida Handwriting")
+			.on("click",  () => {
+	if (guess.length == 0){
+	playseq([song[2],song[3]])
+	} else {
+	playseq([guess,guessSong[1]]);
+	endplayed = false;
+	}
+	});;;
+			
+			
+			
+rectangles = svg.selectAll("rect")
+//transitionR = rectangles.transition().duration(5000).attr("fill", "green");
+
+
+      function handleMouseOver(d, i) {  // Add interactivity
+			
+            // Use D3 to select element, change color and size
+            d3.select(this).attr('fill', 'red');
+			var textid =d3.select(this).attr('id') + "tx"
+			svg.append('text')
+			.attr('x', 140)
+			.attr('y', '550')
+			.attr('id', textid)
+			.text(notemap[parseInt(textid)])//notemap[parseInt(textid)]
+			.attr("font-family", "Lucida Handwriting")
+			//console.log(parseInt(textid))
+			
+			
+						
+			
+			if (guess.length  != 5){
+			var noteid =d3.select(this).attr('id') + "nt"
+			svg.append('ellipse')
+			
+			.attr('cx', guess.length *  (320/8) + 10)
+			.attr('cy', (91 - (parseInt(d3.select(this).attr('id')) * 5) + guessnum * 100 + 5 * cumOffsets[parseInt(d3.select(this).attr('id'))]))
+			.attr('rx', 5)
+			.attr('ry', 4)
+			.attr('opacity', .3)
+			.attr('id', noteid);
+			}
+
+			//console.log(cumOffsets[parseInt(d3.select(this).attr('id'))])
+            // Specify where to put label of text
+            
+          }
+
+      function handleMouseOut(d, i) {
+            // Use D3 to select element, change color back to normal
+			var ild = (d3.select(this).attr('id'));
+			if (blackkeys.includes(parseInt(ild))) {
+            d3.select(this).attr('fill', 'black');
+			} else {
+			 d3.select(this).attr('fill', 'white');
+			}
+			var textid = "[id= '" + d3.select(this).attr('id') + "tx']"
+			var noteid = "[id= '" + d3.select(this).attr('id') + "nt']"
+			d3.select(textid).remove();
+			d3.select(noteid).remove();
+          }
+		  
+		  
+	  function handleClick(d, i)
+		  {
+		  
+		  if (guess.length  != 5){
+		  d3.select(this).attr('fill', 'green');
+		  
+		  var textid =d3.select(this).attr('id') + "tx" + guess.length + guessnum
+			svg.append('text')
+
+			.attr('x', guess.length *  (320/8) + 10)
+			.attr('y', 110 + guessnum * 100)
+			.attr('id', textid)
+			.text(notemap[parseInt(textid)])//notemap[parseInt(textid)]
+			.attr("font-family", "Lucida Handwriting")
+			//console.log(parseInt(textid))
+		  
+			
+			var noteid = "note" + guess.length + guessnum
+			//console.log(noteid)
+			svg.append('ellipse')
+			
+			.attr('cx', guess.length *  (320/8) + 10)
+			.attr('cy', (91 - (parseInt(d3.select(this).attr('id')) * 5) + guessnum * 100 + 5 * cumOffsets[parseInt(d3.select(this).attr('id'))]))
+			.attr('rx', 5)
+			.attr('ry', 4)
+			.attr('opacity', 1)
+			.attr('id', noteid)
+			.attr('class', 'note' + guessnum);
+			
+			guess[guess.length] = parseInt(d3.select(this).attr('id'));
+			}
+			
+			if (guess.length > 5){
+				//d3.selectAll('text').remove();
+				d3.selectAll('.note' + guessnum).remove();
+				guess = []
+				}		
+		
+		note = parseInt(d3.select(this).attr('id'))
+		playnote(note);
+
+				
+			
+		  
+		  }
+		  
+		  function checkanswer(){
+		  
+		  if (guess.length < 5) // check if guess is invalid
+		  {
+		
+		  var workback = 5-guess.length
+		  var i = 0;
+		  while (i < workback)
+		  {
+		  var idd = "[id= '" + guessboxes[4-i] + "']"
+		   // console.log(idd);
+		  d3.select('.mbox' + (4-i) + guessnum).attr('fill', 'red').attr('opacity', .3).transition().duration(750)
+		  .attr('fill', 'grey').attr('opacity', .1);
+		  i++;
+		  }
+		  
+		  
+		  
+		  } else // guess is valid
+		  
+		  {
+		  var corguess = [...song[0]]
+		  var j  = 0;
+		  while (j < guess.length){
+		  
+		  if (guess[j] == song[0][j]){
+		  var idd = "[id= '" + guessboxes[j] + guessnum.toString() + "']"
+		  d3.select(idd).attr('fill', 'green').attr('opacity', .2);
+		  guessSong[1][j] = song[1][j];
+		  corguess[j] = 20; // just a number it cannot equal
+		  }
+		  
+		  j++;
+		  }
+		  var j  = 0;
+		  while (j < guess.length){
+		  
+		  var idd = "[id= '" + guessboxes[j].toString() + guessnum.toString() + "']";
+		  
+		  if (corguess.includes(guess[j])){
+		  if (d3.select(idd).attr('fill') != 'green'){
+		  console.log(corguess)
+		  d3.select(idd).attr('fill', 'yellow').attr('opacity', .2);
+		  //guessSong[1][j] = song[1][j];
+		 
+		 var q = 0;
+		 while (q < corguess.length){
+		 console.log(q)
+		  if (corguess[q] == guess[j]){
+		  corguess[q] = 25;
+		  break;
+		  }
+		  q++
+		  
+		  }
+		  console.log(corguess)
+		  
+		  
+		  
+		  }}
+		  
+		  j++;
+		  }
+		  
+		  
+		  guessSong[0] = guess;
+		  playseq(guessSong)
+		  endplayed = false;
+		  guessnum++;
+		  guess = []
+		  corguess = [];
+		   
+		  } 
+		 
+		  }
+var timetracker = 0;
+var currentplay = [];
+var endplayed = false
+
+	function playseq(seq = guess){
+	currentplay = seq;
+	if (timetracker< currentplay[0].length){
+	playnote(seq[0][timetracker]);
+	setTimeout(tick, seq[1][timetracker])
+	
+	} else {
+	timetracker = 0
+	if (endplayed == false){
+		endplayed = true;
+		playseq([song[2],song[3]])
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	}
+	
+	
+	}
+	
+	function tick(){
+	timetracker += 1;
+	playseq(currentplay)
+	
+	}
+	
+	
+
+
+	
+	function erase() {
+	if ( 6 > guess.length > 0){
+		var L =  guess.pop();
+		d3.select("#note" + guess.length +  guessnum).remove();
+		var textid = "[id= '" + L + "keytx"+  guess.length + guessnum +  "']" 
+		
+		d3.select(textid).remove()
+		
+		
+	}
+}	
+	function builds(){		  
+	var att = 0;
+	const trnvmx = "translate(0, " + (100 * (maxAttempts-1)) + ")"
+	d3.selectAll("rect").attr("transform", trnvmx)
+	while (att < maxAttempts){
+		// magic translate = 120 * max attempts ayayaya
+		
+		buildguess(att);
+		var ms = ".mscript" + att;
+		const trnv = "translate(0, " + 100 * att + ")"
+		d3.selectAll(ms).attr("transform", trnv)
+		att++;
+		}
+	}
+builds();
+
+	function playnote(note, time = .5) {
+
+		const freq = 220 * Math.pow(2, note / 12);
+		// Play a note when clicked.
+		const oscillator = ctx.createOscillator();
+		const gain = ctx.createGain();
+		gain.gain.value = 0;
+		oscillator.type = 'triangle';
+		oscillator.frequency.setValueAtTime(freq, ctx.currentTime);
+		oscillator.connect(gain);
+		gain.connect(ctx.destination);
+		oscillator.start();
+		gain.gain.cancelScheduledValues(ctx.currentTime);
+		gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+		gain.gain.linearRampToValueAtTime(0, ctx.currentTime + time);
+
+}
+
+window.alert("Welcome to Melodle \n You have five chances to correctly guess how the melody begins. \n 	For each guess, correct notes in the correct locations turn green while correct notes in wrong locations turn yellow.\n 	 The ← button erases your most recent guess, the Guess! button submits your guess, and the Listen button allows you to hear what you have so far \n The listen button is \n ");
+
+</script>
+
+
+</html>
